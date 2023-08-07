@@ -8,17 +8,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ApplicationService {
-
     @Autowired
     private ApplicationRepository applicationRepository;
-//    public List<DBApplication> getAllApplications() {
-//        return applicationRepository.findAll();
-//    }
 
     public Page<DBApplication> getAllApplicationsByStatus(ApplicationStatus status, Pageable pageable) {
         if (status == null) {
@@ -27,8 +21,6 @@ public class ApplicationService {
             return applicationRepository.findByStatus(status, pageable);
         }
     }
-
-
 
     public DBApplication getApplicationById(Long id) {
         return applicationRepository.findById(id)

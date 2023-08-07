@@ -18,15 +18,8 @@ import java.util.List;
 public class AuditLogController {
     @Autowired
     private AuditLogService auditLogService;
-
     @Autowired
     private AuditLogMapper auditLogMapper;
-
-//    @GetMapping("/audit-logs")
-//    public ResponseEntity<List<AuditLog>> getAllAuditLogs() {
-//        List<DBAuditLog> dbAuditLogs = auditLogService.getAllAuditLogs();
-//        return ResponseEntity.ok(auditLogMapper.entityToModel(dbAuditLogs));
-//    }
 
     @GetMapping("/audit-logs")
     public ResponseEntity<AuditLogResponse> getAllAuditLogs(@RequestParam(required = false) Integer pageSize, @RequestParam(required = false) Integer pageNumber) {

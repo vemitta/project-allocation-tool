@@ -20,20 +20,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1")
 public class ReportController {
-
     @Autowired
     private UserService userService;
-
     @Autowired
     private UserMapper userMapper;
-
-//    @GetMapping("/reports/users/free")
-//    public ResponseEntity<List<PublicUser>> getAllFreePoolUsers() {
-//        List<DBUser> dbUsers = userService.getFreePoolUsers();
-//
-//
-//        return ResponseEntity.ok(userMapper.entityToPublicModel(dbUsers));
-//    }
 
     @GetMapping("/reports/users/free")
     public ResponseEntity<FreePoolUserResponse> getAllFreePoolUsers(@RequestParam(required = false) Integer pageSize, @RequestParam(required = false) Integer pageNumber) {

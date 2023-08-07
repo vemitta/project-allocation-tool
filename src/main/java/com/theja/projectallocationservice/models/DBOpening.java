@@ -26,7 +26,7 @@ public class DBOpening {
     private Integer level;
     @NotNull
     private String location;
-    @NotNull
+    @Enumerated(EnumType.STRING)
     private OpeningStatus status;
     @ManyToOne
     @JoinColumn(name = "created_by")

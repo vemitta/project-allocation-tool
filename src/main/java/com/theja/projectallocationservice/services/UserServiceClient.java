@@ -8,6 +8,5 @@ import java.util.List;
 
 public interface UserServiceClient {
     List<PermissionName> getPermissions(String userToken);
-
     PublicUser getUser(String authHeader);
 }

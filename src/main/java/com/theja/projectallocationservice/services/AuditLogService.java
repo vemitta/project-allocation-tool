@@ -17,10 +17,6 @@ public class AuditLogService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
-//    public List<DBAuditLog> getAllAuditLogs() {
-//        return auditLogRepository.findAll();
-//    }
-
     public Page<DBAuditLog> getAllAuditLogs(Integer pageSize, Integer pageNumber) {
         if (pageSize == null) pageSize = 1000;
         if (pageNumber == null) pageNumber = 0;

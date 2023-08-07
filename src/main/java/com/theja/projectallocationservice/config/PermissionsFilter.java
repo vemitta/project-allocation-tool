@@ -24,8 +24,12 @@ public class PermissionsFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
+//        if (authHeader == null) {
+//            throw new RuntimeException("Missing authorization header");
+//        }
         if (authHeader == null) {
-            throw new RuntimeException("Missing authorization header");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing authorization header");
+            return;
         }
         java.util.List<PermissionName> permissions = userServiceClient.getPermissions(authHeader);
         requestContext.setPermissions(permissions);

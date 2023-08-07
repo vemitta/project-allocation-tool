@@ -80,5 +80,9 @@ public class ProjectService {
         project.getAllocatedUsers().add(candidate);
         projectRepository.save(project);
     }
+
+    public List<DBProject> getAllProjectsWithoutPagination() {
+        return  projectRepository.findAll();
+    }
 }
 

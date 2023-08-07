@@ -44,12 +44,6 @@ public class OpeningController {
         return ResponseEntity.ok(response);
     }
 
-//    @GetMapping("/openings")
-//    public ResponseEntity<List<Opening>> getAllOpenings() {
-//        List<DBOpening> dbOpenings = openingService.getAllOpenings();
-//        return ResponseEntity.ok(openingMapper.entityToModel(dbOpenings));
-//    }
-
     // Get openings for a specific project
     @GetMapping("/projects/{projectId}/openings")
     public ResponseEntity<List<Opening>> getAllOpeningsForProject(@PathVariable Long projectId) {
@@ -67,15 +61,6 @@ public class OpeningController {
             return ResponseEntity.notFound().build();
         }
     }
-
-//    // Create a new opening
-//    @PostMapping("/projects/{projectId}/openings")
-//    public ResponseEntity<Opening> createOpening(@RequestBody DBOpening dbOpening, @PathVariable Long projectId) {
-//        dbOpening.setProject(projectService.getProjectById(projectId));
-//        DBOpening dbCreatedOpening = openingService.createOpening(dbOpening);
-//        return ResponseEntity.status(HttpStatus.CREATED).body(openingMapper.entityToModel(dbCreatedOpening));
-//    }
-
 
     @PostMapping("/projects/{projectId}/openings")
     public ResponseEntity<Opening> createOpening(@RequestBody @Validated DBOpening dbOpening, @PathVariable Long projectId) {
@@ -128,18 +113,6 @@ public class OpeningController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOpening);
     }
 
-
-    // Update an existing opening
-//    @PutMapping("/projects/{projectId}/openings/{id}")
-//    public ResponseEntity<Opening> updateOpening(@PathVariable("id") Long id, @RequestBody DBOpening dbOpening) {
-//        DBOpening dbUpdatedOpening = openingService.updateOpening(id, dbOpening);
-//        if (dbUpdatedOpening != null) {
-//            return ResponseEntity.ok(openingMapper.entityToModel(dbUpdatedOpening));
-//        } else {
-//            return ResponseEntity.notFound().build();
-//        }
-//    }
-
     @PutMapping("/openings/{id}")
     public ResponseEntity<Opening> updateOpening(
             @PathVariable("id") Long id,
@@ -169,6 +142,23 @@ public class OpeningController {
         return ResponseEntity.ok(responseOpening);
     }
 
+    // Update opening status
+    @PatchMapping("/openings/{id}/status")
+    public ResponseEntity<Opening> updateOpeningStatus(@PathVariable Long id, @RequestParam OpeningStatus newStatus) {
+        DBOpening opening = openingService.getOpeningById(id);
+        if (opening != null) {
+            if (newStatus == OpeningStatus.ACTIVE) {
+                return ResponseEntity.badRequest().build();
+            } else if (newStatus != OpeningStatus.CLOSED) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            opening.setStatus(newStatus);
+            DBOpening dbUpdatedOpening = openingService.updateOpening(id, opening);
+            return ResponseEntity.ok(openingMapper.entityToModel(dbUpdatedOpening));
+        }
+        return ResponseEntity.notFound().build();
+    }
 
     // Delete an opening
     @DeleteMapping("/openings/{id}")

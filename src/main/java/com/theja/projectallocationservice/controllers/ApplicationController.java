@@ -5,7 +5,6 @@ import com.theja.projectallocationservice.models.*;
 import com.theja.projectallocationservice.services.ApplicationService;
 import com.theja.projectallocationservice.services.OpeningService;
 import com.theja.projectallocationservice.services.ProjectService;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,28 +16,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1")
 public class ApplicationController {
     @Autowired
     private ApplicationService applicationService;
-
     @Autowired
     private OpeningService openingService;
-
     @Autowired
     private ProjectService projectService;
-
     @Autowired
     private ApplicationMapper applicationMapper;
-
-//    @GetMapping("/applications")
-//    public ResponseEntity<List<Application>> getAllApplications() {
-//        List<DBApplication> dbApplications = applicationService.getAllApplications();
-//        return ResponseEntity.ok(applicationMapper.entityToModel(dbApplications));
-//    }
 
     @GetMapping("/applications")
     public ResponseEntity<ApplicationListResponse> getAllApplications(

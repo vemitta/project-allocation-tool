@@ -17,13 +17,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1")
 public class AuditCommentController {
-
     @Autowired
     private AuditCommentRepository auditCommentRepository;
-
     @Autowired
     private AuditCommentService auditCommentService;
-
     @Autowired
     private AuditCommentMapper auditCommentMapper;
 

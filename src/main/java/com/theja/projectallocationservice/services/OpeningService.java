@@ -13,24 +13,10 @@ import java.util.Optional;
 
 @Service
 public class OpeningService {
-
     @Autowired
     private OpeningRepository openingRepository;
-
     @Autowired
     private RequestContext requestContext;
-
-//    public Page<DBOpening> getAllOpenings(Integer pageSize, Integer pageNumber) {
-//        if (pageSize == null) pageSize = 1000;
-//        if (pageNumber == null) pageNumber = 0;
-//        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize);
-//        return openingRepository.findAll(pageRequest);
-//    }
-
-//    public List<DBOpening> getAllOpenings() {
-//        return openingRepository.findAll();
-//    }
-
 
     public Page<DBOpening> getAllOpenings(Integer pageSize, Integer pageNumber, Boolean appliedBySelf, Boolean postedBySelf) {
         if (pageSize == null) pageSize = 1000;
