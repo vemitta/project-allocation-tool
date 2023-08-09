@@ -24,7 +24,6 @@ public class DBProject {
     @JoinTable(name = "users_projects",
             joinColumns = @JoinColumn(name = "project_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
-    @NotNull
     private Set<DBUser> allocatedUsers;
     @OneToMany(mappedBy="project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DBOpening> openings;

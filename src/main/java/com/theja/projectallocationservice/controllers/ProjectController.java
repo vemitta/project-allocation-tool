@@ -1,7 +1,11 @@
 package com.theja.projectallocationservice.controllers;
 
+import com.theja.projectallocationservice.exceptions.ResourceNotFoundException;
+import com.theja.projectallocationservice.exceptions.UnauthorizedAccessException;
 import com.theja.projectallocationservice.mappers.ProjectMapper;
 import com.theja.projectallocationservice.models.*;
+import com.theja.projectallocationservice.services.AuditCommentService;
+import com.theja.projectallocationservice.services.AuditLogService;
 import com.theja.projectallocationservice.services.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -10,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -21,6 +27,10 @@ public class ProjectController {
     private ProjectMapper projectMapper;
     @Autowired
     private RequestContext requestContext;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private AuditCommentService auditCommentService;
 
     // Get all projects
     @GetMapping("/projects")
@@ -52,17 +62,41 @@ public class ProjectController {
         if (dbProject != null) {
             return ResponseEntity.ok(projectMapper.entityToModel(dbProject));
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Project not found with ID: " + id);
         }
     }
 
     // Create a new project
     @PostMapping("/projects")
-    public ResponseEntity<Project> createProject(@RequestBody @Validated DBProject dbProject) {
+    public ResponseEntity<Project> createProject(@RequestBody CreateProjectDTO projectDTO) {
+        // Create Audit log
+        DBAuditLog auditLog = auditLogService.createAuditLog(
+                DBAuditLog.builder()
+                        .action("Creating project")
+                        .user(DBUser.builder().id(requestContext.getLoggedinUser().getId()).build())
+                        .loggedAt(new Date())
+                        .auditComments(new ArrayList<>())
+                        .build());
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Checking user permissions")
+                .auditLog(auditLog)
+                .build());
         if (requestContext.getPermissions() == null || !requestContext.getPermissions().contains(PermissionName.CREATE_PROJECT.toString())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            auditCommentService.createAuditComment(DBAuditComment.builder()
+                    .comment("Unauthorized user trying to create project")
+                    .auditLog(auditLog)
+                    .build());
+            throw new UnauthorizedAccessException("You don't have permission to create a project.");
         }
-        DBProject dbCreatedProject = projectService.createProject(dbProject);
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Permissions passed")
+                .auditLog(auditLog)
+                .build());
+        DBProject dbCreatedProject = projectService.createProject(projectDTO);
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Project created")
+                .auditLog(auditLog)
+                .build());
         return ResponseEntity.status(HttpStatus.CREATED).body(projectMapper.entityToModel(dbCreatedProject));
     }
 
@@ -73,7 +107,7 @@ public class ProjectController {
         if (dbUpdatedProject != null) {
             return ResponseEntity.ok(projectMapper.entityToModel(dbUpdatedProject));
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Project not found with ID: " + id);
         }
     }
 
@@ -84,7 +118,7 @@ public class ProjectController {
         if (deleted) {
             return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Project not found with ID: " + id);
         }
     }
 }

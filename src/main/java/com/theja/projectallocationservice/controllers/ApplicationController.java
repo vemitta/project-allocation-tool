@@ -1,10 +1,11 @@
 package com.theja.projectallocationservice.controllers;
 
+import com.theja.projectallocationservice.exceptions.ApplicationNotFoundException;
+import com.theja.projectallocationservice.exceptions.ResourceNotFoundException;
+import com.theja.projectallocationservice.exceptions.UnauthorizedAccessException;
 import com.theja.projectallocationservice.mappers.ApplicationMapper;
 import com.theja.projectallocationservice.models.*;
-import com.theja.projectallocationservice.services.ApplicationService;
-import com.theja.projectallocationservice.services.OpeningService;
-import com.theja.projectallocationservice.services.ProjectService;
+import com.theja.projectallocationservice.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,12 @@ public class ApplicationController {
     private ProjectService projectService;
     @Autowired
     private ApplicationMapper applicationMapper;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private RequestContext requestContext;
+    @Autowired
+    private AuditCommentService auditCommentService;
 
     @GetMapping("/applications")
     public ResponseEntity<ApplicationListResponse> getAllApplications(
@@ -63,17 +70,30 @@ public class ApplicationController {
         if (dbApplication != null) {
             return ResponseEntity.ok(applicationMapper.entityToModel(dbApplication));
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Application not found with opening ID: " + openingId + " or candidate ID " + candidateId);
         }
     }
 
     @PostMapping("/openings/{openingId}/applications")
     public ResponseEntity<Application> createApplication(@PathVariable Long openingId, @RequestBody DBApplication application) {
-//        getpermssion.includes("create user")
-        // Permission passed
-        // Create appl received log
+        // Create Audit log
+        DBAuditLog auditLog = auditLogService.createAuditLog(
+                DBAuditLog.builder()
+                        .action("Applying for opening " + openingId)
+                        .user(DBUser.builder().id(requestContext.getLoggedinUser().getId()).build())
+                        .loggedAt(new Date())
+                        .auditComments(new ArrayList<>())
+                        .build());
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Checking user permissions")
+                .auditLog(auditLog)
+                .build());
         // Fetch the corresponding opening from the OpeningService using openingId
         DBOpening opening = openingService.getOpeningById(openingId);
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Opening with id " + openingId + " found")
+                .auditLog(auditLog)
+                .build());
         // Opening
         if (opening != null) {
             // Associate the application with the opening
@@ -83,9 +103,13 @@ public class ApplicationController {
             application.setInterviews(new ArrayList<>());
             // Save the application to the database
             DBApplication dbCreatedApplication = applicationService.createApplication(application);
+            auditCommentService.createAuditComment(DBAuditComment.builder()
+                    .comment("Applied for opening successfully")
+                    .auditLog(auditLog)
+                    .build());
             return ResponseEntity.status(HttpStatus.CREATED).body(applicationMapper.entityToModel(dbCreatedApplication));
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Opening not found with ID: " + openingId);
         }
     }
 
@@ -103,7 +127,30 @@ public class ApplicationController {
 
     @PatchMapping("/applications/{applicationId}/status")
     public ResponseEntity<Application> updateInterviewStatus(@PathVariable Long applicationId, @RequestParam ApplicationStatus newStatus) {
+        // Create Audit log
+        DBAuditLog auditLog = auditLogService.createAuditLog(
+                DBAuditLog.builder()
+                        .action("Updating status of application id " + applicationId)
+                        .user(DBUser.builder().id(requestContext.getLoggedinUser().getId()).build())
+                        .loggedAt(new Date())
+                        .auditComments(new ArrayList<>())
+                        .build());
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Checking user permissions")
+                .auditLog(auditLog)
+                .build());
+        if (requestContext.getPermissions() == null || !requestContext.getPermissions().contains(PermissionName.VIEW_PENDING_APPLICATIONS.toString())) {
+            auditCommentService.createAuditComment(DBAuditComment.builder()
+                    .comment("Unauthorized user trying to update application status")
+                    .auditLog(auditLog)
+                    .build());
+            throw new UnauthorizedAccessException("You don't have permission to update the application status.");
+        }
         DBApplication application = applicationService.getApplicationById(applicationId);
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Application with " + applicationId + " found")
+                .auditLog(auditLog)
+                .build());
         if (application != null) {
             if (newStatus == ApplicationStatus.APPLIED) {
                 return ResponseEntity.badRequest().build();
@@ -114,10 +161,25 @@ public class ApplicationController {
             }
             application.setStatus(newStatus);
             DBApplication dbUpdatedApplication = applicationService.updateApplication(applicationId, application);
-            projectService.allocateUser(dbUpdatedApplication.getOpening().getProject(), dbUpdatedApplication.getCandidate());
+            auditCommentService.createAuditComment(DBAuditComment.builder()
+                    .comment("Updated the application status")
+                    .auditLog(auditLog)
+                    .build());
+            if (newStatus != ApplicationStatus.REJECTED) {
+                projectService.allocateUser(dbUpdatedApplication.getOpening().getProject(), dbUpdatedApplication.getCandidate());
+                auditCommentService.createAuditComment(DBAuditComment.builder()
+                        .comment("Application accepted and applicant is allocated to the project")
+                        .auditLog(auditLog)
+                        .build());
+            } else {
+                auditCommentService.createAuditComment(DBAuditComment.builder()
+                        .comment("Application rejected")
+                        .auditLog(auditLog)
+                        .build());
+            }
             return ResponseEntity.ok(applicationMapper.entityToModel(dbUpdatedApplication));
         }
-        return ResponseEntity.notFound().build();
+        throw new ApplicationNotFoundException(applicationId);
     }
 }
 

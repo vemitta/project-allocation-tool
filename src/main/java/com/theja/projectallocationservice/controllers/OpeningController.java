@@ -1,9 +1,12 @@
 package com.theja.projectallocationservice.controllers;
 
+import com.theja.projectallocationservice.exceptions.OpeningNotFoundException;
+import com.theja.projectallocationservice.exceptions.OpeningUpdateException;
+import com.theja.projectallocationservice.exceptions.SkillNotFoundException;
+import com.theja.projectallocationservice.exceptions.UnauthorizedAccessException;
 import com.theja.projectallocationservice.mappers.OpeningMapper;
 import com.theja.projectallocationservice.models.*;
 import com.theja.projectallocationservice.services.*;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -58,7 +61,7 @@ public class OpeningController {
         if (dbOpening != null) {
             return ResponseEntity.ok(openingMapper.entityToModel(dbOpening));
         } else {
-            return ResponseEntity.notFound().build();
+            throw new OpeningNotFoundException(id);
         }
     }
 
@@ -78,10 +81,10 @@ public class OpeningController {
                 .build());
         if (requestContext.getPermissions() == null || !requestContext.getPermissions().contains(PermissionName.CREATE_OPENING.toString())) {
             auditCommentService.createAuditComment(DBAuditComment.builder()
-                    .comment("Unauthorized user trying to create project")
+                    .comment("Unauthorized user trying to create opening")
                     .auditLog(auditLog)
                     .build());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedAccessException("You don't have permission to create an opening.");
         }
         auditCommentService.createAuditComment(DBAuditComment.builder()
                 .comment("Permissions passed")
@@ -96,7 +99,7 @@ public class OpeningController {
         List<DBSkill> skills = new ArrayList<>();
         for (DBSkill skill : dbOpening.getSkills()) {
             skills.add(skillService.getSkillById(skill.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Skill not found with ID: " + skill.getId())));
+                    .orElseThrow(() -> new SkillNotFoundException("Skill not found with ID: " + skill.getId())));
         }
         dbOpening.setSkills(skills);
         auditCommentService.createAuditComment(DBAuditComment.builder()
@@ -117,12 +120,33 @@ public class OpeningController {
     public ResponseEntity<Opening> updateOpening(
             @PathVariable("id") Long id,
             @RequestBody DBOpening dbOpening) {
-
+        // Create Audit log
+        DBAuditLog auditLog = auditLogService.createAuditLog(
+                DBAuditLog.builder()
+                        .action("Update Opening " + id)
+                        .user(DBUser.builder().id(requestContext.getLoggedinUser().getId()).build())
+                        .loggedAt(new Date())
+                        .auditComments(new ArrayList<>())
+                        .build());
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Checking user permissions")
+                .auditLog(auditLog)
+                .build());
+        if (requestContext.getPermissions() == null || !requestContext.getPermissions().contains(PermissionName.MANAGE_OPENINGS.toString())) {
+            auditCommentService.createAuditComment(DBAuditComment.builder()
+                    .comment("Unauthorized user trying to create opening")
+                    .auditLog(auditLog)
+                    .build());
+            throw new UnauthorizedAccessException("You don't have permission to create an opening.");
+        }
         DBOpening existingOpening = openingService.getOpeningById(id);
         if (existingOpening == null) {
-            return ResponseEntity.notFound().build();
+            throw new OpeningNotFoundException(id);
         }
-
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Opening with " + id + " found")
+                .auditLog(auditLog)
+                .build());
         // Update the properties of the existingOpening with the new values from the request payload
         existingOpening.setTitle(dbOpening.getTitle());
         existingOpening.setDetails(dbOpening.getDetails());
@@ -130,13 +154,19 @@ public class OpeningController {
         existingOpening.setLocation(dbOpening.getLocation());
         existingOpening.setStatus(dbOpening.getStatus());
         existingOpening.setSkills(dbOpening.getSkills());
-
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Updated opening with new values")
+                .auditLog(auditLog)
+                .build());
         // Save the updated opening
         DBOpening updatedOpening = openingService.updateOpening(id, existingOpening);
         if (updatedOpening == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw new OpeningUpdateException("Failed to update the opening with ID: " + id);
         }
-
+        auditCommentService.createAuditComment(DBAuditComment.builder()
+                .comment("Opening updated")
+                .auditLog(auditLog)
+                .build());
         // Return the updated opening in the response
         Opening responseOpening = openingMapper.entityToModel(updatedOpening);
         return ResponseEntity.ok(responseOpening);
@@ -157,7 +187,7 @@ public class OpeningController {
             DBOpening dbUpdatedOpening = openingService.updateOpening(id, opening);
             return ResponseEntity.ok(openingMapper.entityToModel(dbUpdatedOpening));
         }
-        return ResponseEntity.notFound().build();
+        throw new OpeningNotFoundException(id);
     }
 
     // Delete an opening
@@ -167,7 +197,7 @@ public class OpeningController {
         if (deleted) {
             return ResponseEntity.noContent().build();
         } else {
-            return ResponseEntity.notFound().build();
+            throw new OpeningNotFoundException(id);
         }
     }
 }

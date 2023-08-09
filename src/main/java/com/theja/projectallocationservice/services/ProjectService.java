@@ -1,5 +1,6 @@
 package com.theja.projectallocationservice.services;
 
+import com.theja.projectallocationservice.models.CreateProjectDTO;
 import com.theja.projectallocationservice.models.DBOpening;
 import com.theja.projectallocationservice.models.DBProject;
 import com.theja.projectallocationservice.models.DBUser;
@@ -37,7 +38,10 @@ public class ProjectService {
         return projectRepository.getProjectsForUser(userId);
     }
 
-    public DBProject createProject(DBProject project) {
+    public DBProject createProject(CreateProjectDTO projectDTO) {
+        DBProject project = new DBProject();
+        project.setTitle(projectDTO.getTitle());
+        project.setDetails(projectDTO.getDetails());
         return projectRepository.save(project);
     }
 
