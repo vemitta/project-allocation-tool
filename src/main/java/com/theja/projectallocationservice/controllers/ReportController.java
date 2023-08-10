@@ -42,13 +42,27 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+//    @GetMapping("/reports/users/allocated")
+//    public ResponseEntity<List<PublicUser>> getAllAllocatedUsers(@RequestParam String startDate, @RequestParam String endDate) throws ParseException {
+//        if (requestContext.getPermissions() == null || !requestContext.getPermissions().contains(PermissionName.VIEW_REPORTS.toString())) {
+//            throw new UnauthorizedAccessException("You don't have permission to access any reports.");
+//        }
+//        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+//        List<DBUser> dbUsers = userService.getAllAllocatedUsers(formatter.parse(startDate), formatter.parse(endDate));
+//        return ResponseEntity.ok(userMapper.entityToPublicModel(dbUsers));
+//    }
+
     @GetMapping("/reports/users/allocated")
-    public ResponseEntity<List<PublicUser>> getAllAllocatedUsers(@RequestParam String startDate, @RequestParam String endDate) throws ParseException {
+    public ResponseEntity<AllocatedPoolUserResponse> getAllAllocatedUsers(@RequestParam String startDate, @RequestParam String endDate, @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) Integer pageNumber) throws ParseException {
         if (requestContext.getPermissions() == null || !requestContext.getPermissions().contains(PermissionName.VIEW_REPORTS.toString())) {
             throw new UnauthorizedAccessException("You don't have permission to access any reports.");
         }
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        List<DBUser> dbUsers = userService.getAllAllocatedUsers(formatter.parse(startDate), formatter.parse(endDate));
-        return ResponseEntity.ok(userMapper.entityToPublicModel(dbUsers));
+        Page<DBUser> dbUsers = userService.getAllAllocatedUsers(formatter.parse(startDate), formatter.parse(endDate), pageSize, pageNumber);
+        AllocatedPoolUserResponse response = AllocatedPoolUserResponse.builder()
+                .allocatedUsers(userMapper.entityToPublicModel(dbUsers.getContent()))
+                .totalElements(dbUsers.getTotalElements())
+                .build();
+        return ResponseEntity.ok(response);
     }
 }

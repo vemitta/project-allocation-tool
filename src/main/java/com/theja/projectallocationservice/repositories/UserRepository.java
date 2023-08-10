@@ -18,9 +18,10 @@ public interface UserRepository extends JpaRepository<DBUser, Long> {
     @Query(value = "SELECT * FROM users WHERE id not in (SELECT user_id FROM users_projects);", nativeQuery = true)
     Page<DBUser> getFreePoolUsers(Pageable pageable);
 
-    @Query(value = "SELECT * FROM users WHERE id in (SELECT user_id FROM users_projects WHERE allocated_date between :startDate and :endDate);", nativeQuery = true)
-    List<DBUser> getAllAllocatedUsers(Date startDate, Date endDate);
+//    @Query(value = "SELECT * FROM users WHERE id in (SELECT user_id FROM users_projects WHERE allocated_date between :startDate and :endDate);", nativeQuery = true)
+//    List<DBUser> getAllAllocatedUsers(Date startDate, Date endDate);
 
-    // You can define additional custom query methods here if needed
+    @Query(value = "SELECT * FROM users WHERE id in (SELECT user_id FROM users_projects WHERE allocated_date between :startDate and :endDate);", nativeQuery = true)
+    Page<DBUser> getAllAllocatedUsers(Date startDate, Date endDate, Pageable pageable);
 
 }

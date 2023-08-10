@@ -23,7 +23,14 @@ public class UserService {
         return userRepository.getFreePoolUsers(pageable);
     }
 
-    public List<DBUser> getAllAllocatedUsers(Date startDate, Date endDate) {
-        return userRepository.getAllAllocatedUsers(startDate, endDate);
+//    public List<DBUser> getAllAllocatedUsers(Date startDate, Date endDate) {
+//        return userRepository.getAllAllocatedUsers(startDate, endDate);
+//    }
+
+    public Page<DBUser> getAllAllocatedUsers(Date startDate, Date endDate, Integer pageSize, Integer pageNumber) {
+        if (pageSize == null) pageSize = 1000;
+        if (pageNumber == null) pageNumber = 0;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        return userRepository.getAllAllocatedUsers(startDate, endDate, pageable);
     }
 }
